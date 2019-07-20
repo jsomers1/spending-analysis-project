@@ -1,0 +1,380 @@
+---
+title: "geography_and_trends"
+author: "Jonah Somers and Sahil Kumar"
+date: "12/4/2018"
+output: pdf_document
+---
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(ggplot2movies)
+library(Ecdat)
+library(scales)
+library(circlize)
+library(forecast)
+library(fpp2)
+library(reshape2)
+```
+
+
+```{r Upload Data}
+# upload full or sample data
+sampleDat = read.csv("merged_data.csv")
+
+# view counts for regions
+unique(sampleDat[,"STORE_R"])
+table(sampleDat[,"STORE_R"])
+```
+
+
+###SECTION I: SPENDING BY REGION
+
+
+
+
+```{r Spending by Region - DAY}
+# spending by region (per day)
+agg1 =  aggregate(sampleDat$SPEND ~ sampleDat$STORE_R + sampleDat$PURCHASE_, sampleDat,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","DATE", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, DATE ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region (Per Day)",
+       y = "Dollars Spent",
+       x = "Day") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region 2016-2017") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r Spending by Region - WEEK}
+# spending by region (per week)
+agg1 =  aggregate(sampleDat$SPEND ~ sampleDat$STORE_R + sampleDat$WEEK_NUM, sampleDat,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","WEEK", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, WEEK ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region (Per Week)",
+       y = "Dollars Spent",
+       x = "Week") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region 2016-2017") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r Spending by Region - MONTH}
+# spending by Region (per month) 
+agg1 =  aggregate(sampleDat$SPEND ~ sampleDat$STORE_R + sampleDat$MONTH_NUM, sampleDat,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region (Per Month)",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region 2016-2017") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+###SECTION II: SPENDING BY DEPARTMENT / COMMODITY BY REGION
+
+
+
+
+```{r Spending by Department}
+# aggregate by department for only the East region
+sub1 = sampleDat[sampleDat$STORE_R == "EAST",]
+
+agg1 =  aggregate(sub1$SPEND ~ sub1$DEPARTMENT + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("DEPARTMENT","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ DEPARTMENT)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("FOOD", "NON-FOOD")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Department for East Region (Per Month)",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending East Region 2016-2017") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r Spending by Commodity}
+# aggregate by commodity for only the East region
+sub1 = sampleDat#[sampleDat$STORE_R == "EAST",]
+
+agg1 =  aggregate(sub1$SPEND ~ sub1$COMMODITY + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("COMMODITY","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ COMMODITY)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("MONTH","ACTIVITY","ALCOHOL","AUTO","BABY","BAKERY","BEVERAGE - NON WATER","BEVERAGE - WATER","BULK PRODUCTS","CANNED GOODS","CLOTHING", "COSMETICS","DAIRY","DELI","DRY GOODS","ELECTRONICS","FLORAL","FROZEN FOOD","GIFT","GROCERY STAPLE","HOLIDAY","HOUSEHOLD","IN STORE FOOD SERVICE","INTERNATIONAL FOOD","MEAT - BEEF","MEAT - CHICKEN","MEAT - OTHER","MEAT - PORK","MEAT - POULTRY","MEAT - SAUSAGE","MEAT - TURKEY","MISC","OUTDOOR","PERSONAL CARE","PET","PRODUCE","SEAFOOD","SEASONAL PRODUCTS","SPECIALTY FOOD","TOBACCO PRODUCTS","TOYS")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Commodity (Per Month) in East Region",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending 2016-2017 (East)") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+###Section III: SPENDING ON ALCOHOL TRENDS
+
+
+
+
+```{r Alcohol by Region}
+sub1 = sampleDat[sampleDat$COMMODITY == "ALCOHOL",]
+
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region (Per Day)",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on Alcohol") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r Alcohol by HSHD COMP}
+sub1 = sampleDat[sampleDat$COMMODITY == "ALCOHOL",]
+#View(sampleDat)
+agg1 =  aggregate(sub1$SPEND ~ sub1$HSHD_COMPOSITION + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("HSHD_COMPOSITION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ HSHD_COMPOSITION)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("1 Adult", "1 Adult and Kids", "2 Adults", "2 Adults and Kids", "Single Female", "Single Male")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by HSHD_COMPOSITION Value",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Spending by HSHD_COMPOSITION Value on Alcohol") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+###Section IV: MISCELLANEOUS TRENDS (SEE SECTION HEADERS)
+
+
+
+
+```{r International Food Trends}
+
+sub1 = sampleDat[sampleDat$COMMODITY == "INTERNATIONAL FOOD",]
+#View(sub1)
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region (Per Day)",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on International Food") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r Grocery staple trends}
+
+sub1 = sampleDat[sampleDat$COMMODITY == "GROCERY STAPLE",]
+#View(sub1)
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region on Grocery Staple",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on Grocery Staple") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r Outdoor trends}
+
+sub1 = sampleDat[sampleDat$COMMODITY == "OUTDOOR",]
+#View(sub1)
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  geom_smooth() +
+  labs(title = "Spending by Region on OUTDOOR",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on OUTDOOR") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r Floral trends}
+
+sub1 = sampleDat[sampleDat$COMMODITY == "FLORAL",]
+#View(sub1)
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  #geom_smooth() +
+  labs(title = "Spending by Region on FLORAL",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on FLORAL") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r Canned Goods trends}
+
+sub1 = sampleDat[sampleDat$COMMODITY == "CANNED GOODS",]
+#View(sub1)
+agg1 =  aggregate(sub1$SPEND ~ sub1$STORE_R + sub1$MONTH_NUM, sub1,sum)
+#View(agg1)
+
+names(agg1) = c("REGION","MONTH", "SPEND")
+agg1 = agg1[,c(2,1,3)]
+
+agg2 = dcast(agg1, MONTH ~ REGION)
+#View(agg2)
+#unique(colnames(agg2))
+agg2.ts = ts(agg2[, c("SOUTH", "EAST", "WEST", "CENTRAL")])
+#View(agg2)
+#View(agg1)
+
+autoplot(agg2.ts) +
+  #geom_smooth() +
+  labs(title = "Spending by Region on CANNED GOODS",
+       y = "Dollars Spent",
+       x = "Month") +
+  scale_y_continuous(name = "Dollars Spent",labels = dollar_format(prefix="$")) + 
+  ggtitle("Consumer Spending by Region on CANNED GOODS") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+

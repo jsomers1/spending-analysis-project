@@ -1,0 +1,48 @@
+---
+title: "items_per_basket"
+author: "Jonah Somers and Sahil Kumar"
+date: "12/4/2018"
+output: html_document
+---
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(ggplot2movies)
+library(Ecdat)
+library(scales)
+library(circlize)
+library(forecast)
+library(fpp2)
+library(reshape2)
+library(anytime)
+library(stats)
+library(lubridate)
+```
+
+
+```{r}
+# upload full cleaned data set
+sampleDat = read.csv("merged_data.csv")
+```
+
+```{r}
+#num items per basket
+baskets = sampleDat[, c("PURCHASE_", "WEEK_NUM", "MONTH_NUM", "YEAR", "BASKET_NUM")]
+#View(baskets)
+#str(baskets)
+
+library(plyr)
+temp1 = ddply(baskets, .(baskets$PURCHASE_, baskets$BASKET_NUM), nrow)
+
+q = aggregate(Freq ~ WEEK, temp1, mean) 
+q.ts = ts(q)
+q.ts = q.ts[, "Freq"]
+autoplot(q.ts) +
+  labs(title = "Average Number of Items per Basket",
+       y = "Number of Items",
+       x = "Week") +
+  scale_y_continuous(name = "Number of Items") + 
+  ggtitle("Average Number of Items per Basket") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
